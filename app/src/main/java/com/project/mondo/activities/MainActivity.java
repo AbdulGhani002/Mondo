@@ -1,5 +1,6 @@
 package com.project.mondo.activities;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.widget.*;
@@ -16,6 +17,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText emailText;
     private EditText passwordText;
     private Button loginButton;
+    private Button registerButton;
     private Editable email;
     private Editable password;
 
@@ -30,6 +32,12 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
         loginButton = findViewById(R.id.loginButton);
+        registerButton = findViewById(R.id.registerButton);
+        registerButton.setOnClickListener(v->{
+            Intent registerPage = new Intent(this, RegisterActivity.class);
+            startActivity(registerPage);
+            finish();
+        });
         loginButton.setOnClickListener(v->{
             emailText = findViewById(R.id.editTextTextEmailAddress);
             passwordText = findViewById(R.id.editTextTextPassword);
