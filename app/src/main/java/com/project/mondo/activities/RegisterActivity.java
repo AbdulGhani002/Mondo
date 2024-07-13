@@ -12,7 +12,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.project.mondo.R;
-import com.project.mondo.database.DatabaseAccessObject;
+import com.project.mondo.models.DatabaseAccessObject;
 
 public class RegisterActivity extends AppCompatActivity {
     private EditText nameTextView;
@@ -29,7 +29,7 @@ public class RegisterActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_register);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.registerPage), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
@@ -53,6 +53,7 @@ public class RegisterActivity extends AppCompatActivity {
             finish();
         });
     }
+
     protected void onDestroy() {
         super.onDestroy();
         user.close();
