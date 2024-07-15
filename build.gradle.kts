@@ -1,4 +1,12 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
     alias(libs.plugins.android.application) apply false
+
+}
+
+val apiKey: String? = System.getenv("API_KEY")
+
+subprojects {
+    afterEvaluate {
+        project.extensions.extraProperties.set("apiKey", apiKey)
+    }
 }
