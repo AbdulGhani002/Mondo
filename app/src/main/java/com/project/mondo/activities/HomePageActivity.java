@@ -34,26 +34,29 @@ public class HomePageActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_homepage);
 
-        // Adjust padding for edge-to-edge experience
+        setupInsets();
+        setupRecyclerView();
+        fetchTopStories("home");
+    }
+
+    private void setupInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.homePage), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+    }
 
-        // Initialize RecyclerView
+    private void setupRecyclerView() {
         recyclerView = findViewById(R.id.recyclerViewNews);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        newsAdapter = new NewsAdapter(new ArrayList<>()); // Initialize adapter with empty list
+        newsAdapter = new NewsAdapter(new ArrayList<>(), this);
         recyclerView.setAdapter(newsAdapter);
-
-        // Fetch and display top stories
-        fetchTopStories("home"); // Example section
     }
 
     private void fetchTopStories(String section) {
         NYTimesApi apiService = RetrofitClient.getClient().create(NYTimesApi.class);
-        String apiKey = BuildConfig.API_KEY; // Access the API key from BuildConfig
+        String apiKey = BuildConfig.API_KEY;
         Call<TopStoriesResponse> call = apiService.getTopStories(section, apiKey);
 
         call.enqueue(new Callback<TopStoriesResponse>() {
@@ -61,18 +64,26 @@ public class HomePageActivity extends AppCompatActivity {
             public void onResponse(Call<TopStoriesResponse> call, Response<TopStoriesResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     TopStoriesResponse topStories = response.body();
-                    assert topStories != null;
                     newsAdapter.updateData(topStories.getStories());
                 } else {
-                    Toast.makeText(HomePageActivity.this, "Failed to fetch stories", Toast.LENGTH_SHORT).show();
+                    handleApiError(response);
                 }
             }
 
             @Override
             public void onFailure(Call<TopStoriesResponse> call, Throwable t) {
-                Toast.makeText(HomePageActivity.this, "An error occurred", Toast.LENGTH_SHORT).show();
-                Log.e("HomePageActivity", "Error fetching stories: " + t.getMessage(), t);
+                handleNetworkError(t);
             }
         });
+    }
+
+    private void handleApiError(Response<TopStoriesResponse> response) {
+        Toast.makeText(HomePageActivity.this, "Failed to fetch stories: " + response.message(), Toast.LENGTH_SHORT).show();
+        Log.e("HomePageActivity", "Failed to fetch stories: " + response.message());
+    }
+
+    private void handleNetworkError(Throwable t) {
+        Toast.makeText(HomePageActivity.this, "Network error occurred", Toast.LENGTH_SHORT).show();
+        Log.e("HomePageActivity", "Error fetching stories", t);
     }
 }

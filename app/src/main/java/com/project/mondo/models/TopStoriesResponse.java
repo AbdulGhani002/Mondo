@@ -1,6 +1,7 @@
 package com.project.mondo.models;
 
 import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
 import java.util.List;
 
 public class TopStoriesResponse {
@@ -31,7 +32,9 @@ public class TopStoriesResponse {
         this.stories = stories;
     }
 
-    public static class Story {
+    public static class Story implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         @SerializedName("section")
         private String section;
 
@@ -218,6 +221,7 @@ public class TopStoriesResponse {
         public void setKicker(String kicker) {
             this.kicker = kicker;
         }
+
         public List<String> getDesFacet() {
             return desFacet;
         }
@@ -267,6 +271,24 @@ public class TopStoriesResponse {
         }
 
         // Add getters and setters for other fields as necessary
+
+        // Add getId method
+        public String getId() {
+            return uri; // Assuming 'uri' is unique for each story
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) return true;
+            if (obj == null || getClass() != obj.getClass()) return false;
+            Story story = (Story) obj;
+            return uri.equals(story.uri);
+        }
+
+        @Override
+        public int hashCode() {
+            return uri.hashCode();
+        }
     }
 
     public static class Multimedia {
