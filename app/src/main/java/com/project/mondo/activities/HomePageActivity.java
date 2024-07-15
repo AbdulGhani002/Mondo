@@ -8,19 +8,26 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
+import com.project.mondo.BuildConfig;
 import com.project.mondo.R;
+import com.project.mondo.adapters.NewsAdapter;
 import com.project.mondo.models.TopStoriesResponse;
 import com.project.mondo.network.NYTimesApi;
 import com.project.mondo.network.RetrofitClient;
 
+import java.util.ArrayList;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
-import com.project.mondo.BuildConfig;
-
 
 public class HomePageActivity extends AppCompatActivity {
+
+    private RecyclerView recyclerView;
+    private NewsAdapter newsAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,20 +41,28 @@ public class HomePageActivity extends AppCompatActivity {
             return insets;
         });
 
-        fetchTopStories("home");
+        // Initialize RecyclerView
+        recyclerView = findViewById(R.id.recyclerViewNews);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        newsAdapter = new NewsAdapter(new ArrayList<>()); // Initialize adapter with empty list
+        recyclerView.setAdapter(newsAdapter);
+
+        // Fetch and display top stories
+        fetchTopStories("home"); // Example section
     }
 
     private void fetchTopStories(String section) {
         NYTimesApi apiService = RetrofitClient.getClient().create(NYTimesApi.class);
-        String API_KEY = BuildConfig.API_KEY;
-        Call<TopStoriesResponse> call = apiService.getTopStories(section, API_KEY);
+        String apiKey = BuildConfig.API_KEY; // Access the API key from BuildConfig
+        Call<TopStoriesResponse> call = apiService.getTopStories(section, apiKey);
 
         call.enqueue(new Callback<TopStoriesResponse>() {
             @Override
             public void onResponse(Call<TopStoriesResponse> call, Response<TopStoriesResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     TopStoriesResponse topStories = response.body();
-                    handleTopStories(topStories);
+                    assert topStories != null;
+                    newsAdapter.updateData(topStories.getStories());
                 } else {
                     Toast.makeText(HomePageActivity.this, "Failed to fetch stories", Toast.LENGTH_SHORT).show();
                 }
@@ -59,12 +74,5 @@ public class HomePageActivity extends AppCompatActivity {
                 Log.e("HomePageActivity", "Error fetching stories: " + t.getMessage(), t);
             }
         });
-    }
-
-    private void handleTopStories(TopStoriesResponse topStories) {
-        if (!topStories.getStories().isEmpty()) {
-            System.out.println(topStories.getStories().get(0).getTitle());
-            Log.d("HomePageActivity", topStories.getStories().get(0).getTitle());
-        }
     }
 }
