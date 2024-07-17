@@ -2,6 +2,7 @@ package com.project.mondo.adapters;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -13,18 +14,17 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.project.mondo.R;
 import com.project.mondo.activities.ArticleActivity;
+import com.project.mondo.models.NewsDiffCallback;
 import com.project.mondo.models.TopStoriesResponse;
 
-import java.io.Serializable;
 import java.util.List;
 
 public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> {
-
-    private List<TopStoriesResponse.Story> articles;
+    private List<TopStoriesResponse.Story> stories;
     private Context context;
 
-    public NewsAdapter(List<TopStoriesResponse.Story> articles, Context context) {
-        this.articles = articles;
+    public NewsAdapter(List<TopStoriesResponse.Story> stories, Context context) {
+        this.stories = stories;
         this.context = context;
     }
 
@@ -38,24 +38,24 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        TopStoriesResponse.Story article = articles.get(position);
-        holder.bind(article);
+        TopStoriesResponse.Story story = stories.get(position);
+        holder.bind(story);
         holder.itemView.setOnClickListener(v -> {
             Intent intent = new Intent(context, ArticleActivity.class);
-            intent.putExtra("article", (Serializable) article);
+            intent.putExtra("story", story);
             context.startActivity(intent);
         });
     }
 
     @Override
     public int getItemCount() {
-        return articles.size();
+        return stories.size();
     }
 
     public void updateData(List<TopStoriesResponse.Story> newData) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new NewsDiffCallback(this.articles, newData));
-        articles.clear();
-        articles.addAll(newData);
+        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new NewsDiffCallback(this.stories, newData));
+        stories.clear();
+        stories.addAll(newData);
         diffResult.dispatchUpdatesTo(this);
     }
 
@@ -73,44 +73,11 @@ public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> {
             publishedDateTextView = itemView.findViewById(R.id.textPublishedDate);
         }
 
-        public void bind(TopStoriesResponse.Story article) {
-            titleTextView.setText(article.getTitle());
-            abstractTextView.setText(article.getStoryAbstract());
-            bylineTextView.setText(article.getByline());
-            publishedDateTextView.setText(article.getPublishedDate());
-        }
-    }
-
-    class NewsDiffCallback extends DiffUtil.Callback {
-
-        private final List<TopStoriesResponse.Story> oldList;
-        private final List<TopStoriesResponse.Story> newList;
-
-        public NewsDiffCallback(List<TopStoriesResponse.Story> oldList, List<TopStoriesResponse.Story> newList) {
-            this.oldList = oldList;
-            this.newList = newList;
-        }
-
-        @Override
-        public int getOldListSize() {
-            return oldList.size();
-        }
-
-        @Override
-        public int getNewListSize() {
-            return newList.size();
-        }
-
-        @Override
-        public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
-            return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
-        }
-
-        @Override
-        public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-            TopStoriesResponse.Story oldItem = oldList.get(oldItemPosition);
-            TopStoriesResponse.Story newItem = newList.get(newItemPosition);
-            return oldItem.equals(newItem);
+        public void bind(TopStoriesResponse.Story story) {
+            titleTextView.setText(story.getTitle());
+            abstractTextView.setText(story.getStoryAbstract());
+            bylineTextView.setText(story.getByline());
+            publishedDateTextView.setText(story.getPublishedDate());
         }
     }
 }

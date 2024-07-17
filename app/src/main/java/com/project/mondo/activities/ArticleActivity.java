@@ -2,6 +2,7 @@ package com.project.mondo.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -23,11 +24,14 @@ public class ArticleActivity extends AppCompatActivity {
         bodyTextView = findViewById(R.id.textView2);
 
         Intent intent = getIntent();
-        TopStoriesResponse.Story article = (TopStoriesResponse.Story) intent.getSerializableExtra("article");
+        TopStoriesResponse.Story article = intent.getParcelableExtra("story");
 
         if (article != null) {
             titleTextView.setText(article.getTitle());
+            Log.d("ArticleActivity", "Article received: " + article.getTitle());
             bodyTextView.setText(article.getStoryAbstract());
+        } else {
+            Log.e("ArticleActivity", "Article is null");
         }
     }
 }

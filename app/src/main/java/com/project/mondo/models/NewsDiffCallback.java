@@ -37,7 +37,6 @@ public class NewsDiffCallback extends DiffUtil.Callback {
         return oldStory.getTitle().equals(newStory.getTitle()) &&
                 oldStory.getStoryAbstract().equals(newStory.getStoryAbstract()) &&
                 oldStory.getUrl().equals(newStory.getUrl()) &&
-
                 oldStory.getPublishedDate().equals(newStory.getPublishedDate());
     }
 }

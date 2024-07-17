@@ -1,10 +1,11 @@
 package com.project.mondo.models;
 
+import android.os.Parcel;
+import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
-import java.io.Serializable;
 import java.util.List;
 
-public class TopStoriesResponse {
+public class TopStoriesResponse implements Parcelable {
     @SerializedName("status")
     private String status;
 
@@ -14,6 +15,34 @@ public class TopStoriesResponse {
     public TopStoriesResponse(String status, List<Story> stories) {
         this.status = status;
         this.stories = stories;
+    }
+
+    protected TopStoriesResponse(Parcel in) {
+        status = in.readString();
+        stories = in.createTypedArrayList(Story.CREATOR);
+    }
+
+    public static final Creator<TopStoriesResponse> CREATOR = new Creator<TopStoriesResponse>() {
+        @Override
+        public TopStoriesResponse createFromParcel(Parcel in) {
+            return new TopStoriesResponse(in);
+        }
+
+        @Override
+        public TopStoriesResponse[] newArray(int size) {
+            return new TopStoriesResponse[size];
+        }
+    };
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(status);
+        dest.writeTypedList(stories);
+    }
+
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
     public String getStatus() {
@@ -32,7 +61,7 @@ public class TopStoriesResponse {
         this.stories = stories;
     }
 
-    public static class Story implements Serializable {
+    public static class Story implements Parcelable {
         private static final long serialVersionUID = 1L;
 
         @SerializedName("section")
@@ -116,6 +145,68 @@ public class TopStoriesResponse {
             this.geoFacet = geoFacet;
             this.multimedia = multimedia;
             this.shortUrl = shortUrl;
+        }
+
+        protected Story(Parcel in) {
+            section = in.readString();
+            subsection = in.readString();
+            title = in.readString();
+            storyAbstract = in.readString();
+            url = in.readString();
+            uri = in.readString();
+            byline = in.readString();
+            itemType = in.readString();
+            updatedDate = in.readString();
+            createdDate = in.readString();
+            publishedDate = in.readString();
+            materialTypeFacet = in.readString();
+            kicker = in.readString();
+            desFacet = in.createStringArrayList();
+            orgFacet = in.createStringArrayList();
+            perFacet = in.createStringArrayList();
+            geoFacet = in.createStringArrayList();
+            multimedia = in.createTypedArrayList(Multimedia.CREATOR);
+            shortUrl = in.readString();
+        }
+
+        public static final Creator<Story> CREATOR = new Creator<Story>() {
+            @Override
+            public Story createFromParcel(Parcel in) {
+                return new Story(in);
+            }
+
+            @Override
+            public Story[] newArray(int size) {
+                return new Story[size];
+            }
+        };
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(section);
+            dest.writeString(subsection);
+            dest.writeString(title);
+            dest.writeString(storyAbstract);
+            dest.writeString(url);
+            dest.writeString(uri);
+            dest.writeString(byline);
+            dest.writeString(itemType);
+            dest.writeString(updatedDate);
+            dest.writeString(createdDate);
+            dest.writeString(publishedDate);
+            dest.writeString(materialTypeFacet);
+            dest.writeString(kicker);
+            dest.writeStringList(desFacet);
+            dest.writeStringList(orgFacet);
+            dest.writeStringList(perFacet);
+            dest.writeStringList(geoFacet);
+            dest.writeTypedList(multimedia);
+            dest.writeString(shortUrl);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
         }
 
         public String getSection() {
@@ -270,11 +361,8 @@ public class TopStoriesResponse {
             this.shortUrl = shortUrl;
         }
 
-        // Add getters and setters for other fields as necessary
-
-        // Add getId method
         public String getId() {
-            return uri; // Assuming 'uri' is unique for each story
+            return uri;
         }
 
         @Override
@@ -291,7 +379,7 @@ public class TopStoriesResponse {
         }
     }
 
-    public static class Multimedia {
+    public static class Multimedia implements Parcelable {
         @SerializedName("url")
         private String url;
 
@@ -309,6 +397,38 @@ public class TopStoriesResponse {
             this.format = format;
             this.height = height;
             this.width = width;
+        }
+
+        protected Multimedia(Parcel in) {
+            url = in.readString();
+            format = in.readString();
+            height = in.readInt();
+            width = in.readInt();
+        }
+
+        public static final Creator<Multimedia> CREATOR = new Creator<Multimedia>() {
+            @Override
+            public Multimedia createFromParcel(Parcel in) {
+                return new Multimedia(in);
+            }
+
+            @Override
+            public Multimedia[] newArray(int size) {
+                return new Multimedia[size];
+            }
+        };
+
+        @Override
+        public void writeToParcel(Parcel dest, int flags) {
+            dest.writeString(url);
+            dest.writeString(format);
+            dest.writeInt(height);
+            dest.writeInt(width);
+        }
+
+        @Override
+        public int describeContents() {
+            return 0;
         }
 
         public String getUrl() {
