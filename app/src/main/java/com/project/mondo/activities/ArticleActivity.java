@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.project.mondo.R;
-import com.project.mondo.models.TopStoriesResponse;
+import com.project.mondo.models.ArticleSearchResponse;
 
 public class ArticleActivity extends AppCompatActivity {
 
@@ -21,17 +21,23 @@ public class ArticleActivity extends AppCompatActivity {
         setContentView(R.layout.article_activity);
 
         titleTextView = findViewById(R.id.textView);
-        bodyTextView = findViewById(R.id.textView2);
+        bodyTextView = findViewById(R.id.bodyTextView);
 
         Intent intent = getIntent();
-        TopStoriesResponse.Story article = intent.getParcelableExtra("story");
+        ArticleSearchResponse.Response.Article article = intent.getParcelableExtra("article");
 
         if (article != null) {
-            titleTextView.setText(article.getTitle());
-            Log.d("ArticleActivity", "Article received: " + article.getTitle());
-            bodyTextView.setText(article.getStoryAbstract());
+            titleTextView.setText(article.getWebTitle());
+
+            String bodyText = article.getFields() != null ? article.getFields().getBodyText() : "No content available";
+            bodyTextView.setText(bodyText);
+
+            Log.d("ArticleActivity", "Article received: " + article.getWebTitle());
+            Log.d("ArticleActivity", "Body content: " + bodyText);
         } else {
             Log.e("ArticleActivity", "Article is null");
+            titleTextView.setText("No title available");
+            bodyTextView.setText("No content available");
         }
     }
 }

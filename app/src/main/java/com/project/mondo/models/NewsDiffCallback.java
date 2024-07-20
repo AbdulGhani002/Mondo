@@ -6,10 +6,10 @@ import java.util.List;
 
 public class NewsDiffCallback extends DiffUtil.Callback {
 
-    private final List<TopStoriesResponse.Story> oldList;
-    private final List<TopStoriesResponse.Story> newList;
+    private final List<ArticleSearchResponse.Response.Article> oldList;
+    private final List<ArticleSearchResponse.Response.Article> newList;
 
-    public NewsDiffCallback(List<TopStoriesResponse.Story> oldList, List<TopStoriesResponse.Story> newList) {
+    public NewsDiffCallback(List<ArticleSearchResponse.Response.Article> oldList, List<ArticleSearchResponse.Response.Article> newList) {
         this.oldList = oldList;
         this.newList = newList;
     }
@@ -26,18 +26,18 @@ public class NewsDiffCallback extends DiffUtil.Callback {
 
     @Override
     public boolean areItemsTheSame(int oldItemPosition, int newItemPosition) {
+        // Assuming 'id' uniquely identifies each article
         return oldList.get(oldItemPosition).getId().equals(newList.get(newItemPosition).getId());
     }
 
     @Override
     public boolean areContentsTheSame(int oldItemPosition, int newItemPosition) {
-        TopStoriesResponse.Story oldStory = oldList.get(oldItemPosition);
-        TopStoriesResponse.Story newStory = newList.get(newItemPosition);
+        ArticleSearchResponse.Response.Article oldArticle = oldList.get(oldItemPosition);
+        ArticleSearchResponse.Response.Article newArticle = newList.get(newItemPosition);
 
-        return oldStory.getTitle().equals(newStory.getTitle()) &&
-                oldStory.getStoryAbstract().equals(newStory.getStoryAbstract()) &&
-                oldStory.getUrl().equals(newStory.getUrl()) &&
-                oldStory.getPublishedDate().equals(newStory.getPublishedDate());
+        return oldArticle.getWebTitle().equals(newArticle.getWebTitle()) &&
+                oldArticle.getFields().getTrailText().equals(newArticle.getFields().getTrailText()) &&
+                oldArticle.getSectionName().equals(newArticle.getSectionName()) &&
+                oldArticle.getWebUrl().equals(newArticle.getWebUrl());
     }
 }
-
