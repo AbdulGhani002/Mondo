@@ -14,11 +14,12 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.project.mondo.BuildConfig;
 import com.project.mondo.R;
 import com.project.mondo.adapters.NewsAdapter;
-import com.project.mondo.models.TopStoriesResponse;
-import com.project.mondo.network.NYTimesApi;
+import com.project.mondo.models.ArticleSearchResponse;
+import com.project.mondo.network.GuardianAPIService;
 import com.project.mondo.network.RetrofitClient;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -36,7 +37,7 @@ public class HomePageActivity extends AppCompatActivity {
 
         setupInsets();
         setupRecyclerView();
-        fetchTopStories("home");
+        fetchGuardianArticles("latest");
     }
 
     private void setupInsets() {
@@ -54,36 +55,41 @@ public class HomePageActivity extends AppCompatActivity {
         recyclerView.setAdapter(newsAdapter);
     }
 
-    private void fetchTopStories(String section) {
-        NYTimesApi apiService = RetrofitClient.getClient().create(NYTimesApi.class);
-        String apiKey = BuildConfig.API_KEY;
-        Call<TopStoriesResponse> call = apiService.getTopStories(section, apiKey);
+    private void fetchGuardianArticles(String query) {
+        GuardianAPIService apiService = RetrofitClient.getClient().create(GuardianAPIService.class);
+        String apiKey = "40a29f60-207c-4e81-9fda-addb4f7bc4f0";
+        Call<ArticleSearchResponse> call = apiService.searchArticles(apiKey, query);
 
-        call.enqueue(new Callback<TopStoriesResponse>() {
+        call.enqueue(new Callback<ArticleSearchResponse>() {
             @Override
-            public void onResponse(Call<TopStoriesResponse> call, Response<TopStoriesResponse> response) {
+            public void onResponse(Call<ArticleSearchResponse> call, Response<ArticleSearchResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    TopStoriesResponse topStories = response.body();
-                    newsAdapter.updateData(topStories.getStories());
+                    ArticleSearchResponse articleResponse = response.body();
+                    List<ArticleSearchResponse.Response.Article> articles = articleResponse.getResponse().getResults();
+                    if (articles != null && !articles.isEmpty()) {
+                        newsAdapter.updateData(articles);
+                    } else {
+                        Toast.makeText(HomePageActivity.this, "No articles found", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     handleApiError(response);
                 }
             }
 
             @Override
-            public void onFailure(Call<TopStoriesResponse> call, Throwable t) {
+            public void onFailure(Call<ArticleSearchResponse> call, Throwable t) {
                 handleNetworkError(t);
             }
         });
     }
 
-    private void handleApiError(Response<TopStoriesResponse> response) {
-        Toast.makeText(HomePageActivity.this, "Failed to fetch stories: " + response.message(), Toast.LENGTH_SHORT).show();
-        Log.e("HomePageActivity", "Failed to fetch stories: " + response.message());
+    private void handleApiError(Response<ArticleSearchResponse> response) {
+        Toast.makeText(HomePageActivity.this, "Failed to fetch articles: " + response.message(), Toast.LENGTH_SHORT).show();
+        Log.e("HomePageActivity", "Failed to fetch articles: " + response.message());
     }
 
     private void handleNetworkError(Throwable t) {
         Toast.makeText(HomePageActivity.this, "Network error occurred", Toast.LENGTH_SHORT).show();
-        Log.e("HomePageActivity", "Error fetching stories", t);
+        Log.e("HomePageActivity", "Error fetching articles", t);
     }
 }

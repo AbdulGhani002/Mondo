@@ -23,7 +23,7 @@
         android:layout_marginBottom="8dp" />
 
     <TextView
-        android:id="@+id/textByline"
+        android:id="@+id/textSection"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textSize="14sp"

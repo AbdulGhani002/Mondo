@@ -3,9 +3,9 @@ package com.project.mondo.network;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class RetrofitClient {
+public class ApiClient {
+    private static final String BASE_URL = "https://api.nytimes.com/";
     private static Retrofit retrofit = null;
-    private static final String BASE_URL = "https://content.guardianapis.com/";
 
     public static Retrofit getClient() {
         if (retrofit == null) {
@@ -17,3 +17,4 @@ public class RetrofitClient {
         return retrofit;
     }
 }
+
