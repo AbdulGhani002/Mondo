@@ -3,36 +3,29 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
-
+    android:padding="16dp"
+    android:background="?attr/selectableItemBackground">
     <TextView
         android:id="@+id/textTitle"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="18sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/textAbstract"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        android:textColor="@color/dark_gray"
-        android:layout_marginBottom="8dp" />
-
+        android:layout_marginBottom="8dp"
+        android:paddingBottom="4dp" />
     <TextView
         android:id="@+id/textSection"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="14sp"
         android:textColor="@color/gray"
-        android:layout_marginBottom="8dp" />
+        android:layout_marginBottom="8dp"
+        android:paddingBottom="4dp" />
 
     <TextView
         android:id="@+id/textPublishedDate"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="12sp"
         android:textColor="@color/light_gray" />

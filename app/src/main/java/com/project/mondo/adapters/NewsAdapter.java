@@ -8,75 +8,67 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.project.mondo.R;
 import com.project.mondo.activities.ArticleActivity;
-import com.project.mondo.models.ArticleSearchResponse;
-import com.project.mondo.models.NewsDiffCallback;
+import com.project.mondo.R;
+import com.project.mondo.models.Article;
 
 import java.util.List;
 
-public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.ViewHolder> {
-    private List<ArticleSearchResponse.Response.Article> articles;
+public class NewsAdapter extends RecyclerView.Adapter<NewsAdapter.NewsViewHolder> {
+
+    private List<Article> articleList;
     private Context context;
 
-    public NewsAdapter(List<ArticleSearchResponse.Response.Article> articles, Context context) {
-        this.articles = articles;
+    public NewsAdapter(Context context, List<Article> articles) {
         this.context = context;
+        this.articleList = articles;
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    public NewsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_news_article, parent, false);
-        return new ViewHolder(view);
+        return new NewsViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        ArticleSearchResponse.Response.Article article = articles.get(position);
-        holder.bind(article);
-        holder.itemView.setOnClickListener(v -> {
+    public void onBindViewHolder(@NonNull NewsViewHolder holder, int position) {
+        Article article = articleList.get(position);
+        holder.titleTextView.setText(article.getTitle());
+
+        holder.sectionTextView.setText(article.getSectionName() != null ? article.getSectionName() : "No section info");
+        holder.publishedDateTextView.setText(article.getPublicationDate() != null ? article.getPublicationDate() : "No date available");
+
+        holder.itemView.setOnClickListener(view -> {
             Intent intent = new Intent(context, ArticleActivity.class);
-            intent.putExtra("articleUrl", article.getWebUrl());
+            intent.putExtra("article", article);
             context.startActivity(intent);
         });
     }
 
     @Override
     public int getItemCount() {
-        return articles.size();
+        return articleList.size();
     }
 
-    public void updateData(List<ArticleSearchResponse.Response.Article> newData) {
-        DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new NewsDiffCallback(this.articles, newData));
-        articles.clear();
-        articles.addAll(newData);
-        diffResult.dispatchUpdatesTo(this);
+    public void updateData(List<Article> newArticleList) {
+        this.articleList = newArticleList;
+        notifyDataSetChanged();
     }
 
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        private TextView titleTextView;
-        private TextView abstractTextView;
-        private TextView sectionTextView;
-        private TextView publishedDateTextView;
+    static class NewsViewHolder extends RecyclerView.ViewHolder {
+        final TextView titleTextView;
+        final TextView sectionTextView;
+        final TextView publishedDateTextView;
 
-        public ViewHolder(@NonNull View itemView) {
+        NewsViewHolder(@NonNull View itemView) {
             super(itemView);
             titleTextView = itemView.findViewById(R.id.textTitle);
-            abstractTextView = itemView.findViewById(R.id.textAbstract);
             sectionTextView = itemView.findViewById(R.id.textSection);
             publishedDateTextView = itemView.findViewById(R.id.textPublishedDate);
-        }
-
-        public void bind(ArticleSearchResponse.Response.Article article) {
-            titleTextView.setText(article.getWebTitle());
-            abstractTextView.setText(article.getFields() != null ? article.getFields().getTrailText() : "");
-            sectionTextView.setText(article.getSectionName());
-            // publishedDateTextView.setText(article.getPublishedDate()); // Modify as needed
         }
     }
 }
