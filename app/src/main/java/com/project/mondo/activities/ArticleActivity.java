@@ -2,6 +2,8 @@ package com.project.mondo.activities;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.text.Html;
 import android.util.Log;
 import android.widget.TextView;
@@ -14,9 +16,12 @@ import com.project.mondo.models.Article;
 import com.project.mondo.models.TranslationResponse;
 import com.project.mondo.network.TranslationService;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -26,11 +31,19 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+
+import com.project.mondo.data.Nouns;
+
+
 public class ArticleActivity extends AppCompatActivity {
     private static final String TAG = "ArticleActivity";
     private TextView titleTextView;
     private TextView bodyTextView;
-    private static final int CHUNK_SIZE = 20;
+    private static final int DELAY_MS = 4000;
+    private static final Set<String> NOUNS = Nouns.NOUNS;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -49,6 +62,7 @@ public class ArticleActivity extends AppCompatActivity {
                 if (article.getFields() != null) {
                     String body = article.getFields().getBody();
                     if (body != null) {
+                        bodyTextView.setText(Html.fromHtml(body, Html.FROM_HTML_MODE_COMPACT));
                         translateAndHighlightText(body);
                     } else {
                         bodyTextView.setText("No Content");
@@ -63,32 +77,54 @@ public class ArticleActivity extends AppCompatActivity {
         }
     }
 
-    private void translateAndHighlightText(String body) {
-        List<String> chunks = splitTextIntoChunks(body, CHUNK_SIZE);
-        for (String chunk : chunks) {
-            translateText(chunk, translatedText -> {
-                runOnUiThread(() -> {
-                    bodyTextView.append(Html.fromHtml(translatedText, Html.FROM_HTML_MODE_COMPACT) + " ");
-                });
-            });
+    private void translateAndHighlightText(String originalHtml) {
+        Document document = Jsoup.parse(originalHtml);
+        List<Element> elements = document.body().getAllElements();
+        Handler handler = new Handler(Looper.getMainLooper());
+
+        for (Element element : elements) {
+            String elementText = element.ownText();
+            if (!elementText.trim().isEmpty()) {
+                String[] words = elementText.split("\\s+");
+                for (int i = 0; i < words.length; i++) {
+                    final String word = words[i];
+                    final int index = i;
+                    handler.postDelayed(() -> {
+                        if (isNoun(word)) {
+                            translateText(word, translatedText -> {
+                                runOnUiThread(() -> {
+                                    if (translatedText.equals("Translation Failed") || translatedText.equals("Translation Failed: No translations found") || translatedText.equals("Translation Failed: No noun translations found")) {
+                                        Log.e(TAG, "Translation Failed for word: " + word);
+                                        return;
+                                    }
+                                    String highlightedText = highlightText(translatedText);
+                                    element.html(element.html().replaceFirst(word, highlightedText));
+                                    bodyTextView.setText(Html.fromHtml(document.html(), Html.FROM_HTML_MODE_COMPACT));
+                                    Log.d(TAG, "Updated HTML: " + document.html());
+                                });
+                            });
+                        }
+                    }, index * DELAY_MS);
+                }
+            }
         }
     }
 
-    private List<String> splitTextIntoChunks(String text, int chunkSize) {
-        List<String> chunks = new ArrayList<>();
-        String[] words = text.split("\\s+");
-        StringBuilder chunk = new StringBuilder();
-        for (String word : words) {
-            if (chunk.length() + word.length() > chunkSize) {
-                chunks.add(chunk.toString().trim());
-                chunk.setLength(0);
-            }
-            chunk.append(word).append(" ");
-        }
-        if (chunk.length() > 0) {
-            chunks.add(chunk.toString().trim());
-        }
-        return chunks;
+    private boolean isNoun(String word) {
+        return NOUNS.contains(word.toLowerCase());
+    }
+
+    private String highlightText(String text) {
+        return "<span style=\"color: red; background-color: yellow; font-weight: bold;\">" +
+                escapeHtml(text) + "</span>";
+    }
+
+    private String escapeHtml(String text) {
+        return text.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
     private void translateText(String text, TranslationCallback callback) {
@@ -97,10 +133,13 @@ public class ArticleActivity extends AppCompatActivity {
 
         OkHttpClient client = new OkHttpClient.Builder()
                 .addInterceptor(logging)
+                .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
                 .build();
 
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl("http://10.0.2.2:8999/")
+                .baseUrl("http://192.168.18.68:8999/")
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .callbackExecutor(Executors.newSingleThreadExecutor())
@@ -108,33 +147,49 @@ public class ArticleActivity extends AppCompatActivity {
 
         TranslationService service = retrofit.create(TranslationService.class);
 
-
         Call<TranslationResponse> call = service.translate(text, "en", "it");
+        makeCallWithRetry(call, 3, 4000, callback);
+    }
 
+    private void makeCallWithRetry(Call<TranslationResponse> call, int retries, long delay, TranslationCallback callback) {
         call.enqueue(new Callback<TranslationResponse>() {
             @Override
             public void onResponse(Call<TranslationResponse> call, Response<TranslationResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-
-                    String translatedText = response.body().getResult();
-                    callback.onTranslationComplete(translatedText);
-                } else {
-                    Log.e(TAG, "Error: " + response.message());
-                    try {
-                        Log.e(TAG, "Error body: " + response.errorBody().string());
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    TranslationResponse.Translations translations = response.body().getTranslations();
+                    if (translations != null) {
+                        List<TranslationResponse.TranslationItem> nounTranslations = translations.getNoun();
+                        if (nounTranslations != null && !nounTranslations.isEmpty()) {
+                            String translatedText = nounTranslations.get(0).getTranslation();
+                            callback.onTranslationComplete(translatedText);
+                        } else {
+                            callback.onTranslationComplete("Translation Failed: No noun translations found");
+                        }
+                    } else {
+                        callback.onTranslationComplete("Translation Failed: No translations found");
                     }
-                    callback.onTranslationComplete("Translation Failed");
+                } else {
+                    Log.e(TAG, "API Error: " + response.message());
+                    Log.d(TAG, "Response Body: " + response.errorBody());
+                    handleFailure(call, retries, delay, callback);
                 }
             }
 
             @Override
             public void onFailure(Call<TranslationResponse> call, Throwable t) {
-                Log.e(TAG, "Error: ", t);
-                callback.onTranslationComplete("Translation Error: " + t.getMessage());
+                Log.e(TAG, "Request Failure: ", t);
+                handleFailure(call, retries, delay, callback);
             }
         });
+    }
+
+    private void handleFailure(Call<TranslationResponse> call, int retries, long delay, TranslationCallback callback) {
+        if (retries > 0) {
+            Log.e(TAG, "Retrying request. Retries left: " + retries);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> makeCallWithRetry(call.clone(), retries - 1, delay, callback), delay);
+        } else {
+            callback.onTranslationComplete("Translation Failed");
+        }
     }
 
     private interface TranslationCallback {

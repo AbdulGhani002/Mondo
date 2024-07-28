@@ -17,4 +17,3 @@ public interface TranslationService {
     @GET("languages")
     Call<String> getLanguages();
 }
-
