@@ -28,7 +28,6 @@ import com.project.mondo.network.TranslationService;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -55,6 +54,7 @@ public class ArticleActivity extends AppCompatActivity {
     private static final String TAG = "ArticleActivity";
     private TextView titleTextView;
     private TextView bodyTextView;
+    private static final int DELAY_MS = 4000;
     private static final Set<String> NOUNS = Nouns.NOUNS;
     private List<WordInfo> translatedWords = new ArrayList<>();
 
@@ -90,131 +90,59 @@ public class ArticleActivity extends AppCompatActivity {
         }
     }
 
-
     private void translateAndHighlightText(String originalHtml) {
         Document document = Jsoup.parse(originalHtml);
         List<Element> elements = document.body().getAllElements();
+        Handler handler = new Handler(Looper.getMainLooper());
 
         for (Element element : elements) {
             String elementText = element.ownText();
             if (!elementText.trim().isEmpty()) {
                 String[] words = elementText.split("\\s+");
-                for (String word : words) {
-                    if (isNoun(word)) {
-                        Handler handler = new Handler(Looper.getMainLooper());
-                        handler.postDelayed(() -> {
+                for (int i = 0; i < words.length; i++) {
+                    final String word = words[i];
+                    final int index = i;
+                    handler.postDelayed(() -> {
+                        if (isNoun(word)) {
                             translateText(word, translatedText -> {
                                 runOnUiThread(() -> {
                                     if (translatedText.equals("Translation Failed") || translatedText.equals("Translation Failed: No translations found") || translatedText.equals("Translation Failed: No noun translations found")) {
                                         Log.e(TAG, "Translation Failed for word: " + word);
                                         return;
                                     }
+                                    String highlightedText = highlightText(translatedText);
+                                    element.html(element.html().replaceFirst(word, highlightedText));
+                                    bodyTextView.setText(Html.fromHtml(document.html(), Html.FROM_HTML_MODE_COMPACT));
+                                    Log.d(TAG, "Updated HTML: " + document.html());
+
                                     WordInfo wordInfo = new WordInfo(word, translatedText, null, null, null);
                                     translatedWords.add(wordInfo);
-                                    applyTranslationForWord(wordInfo);
+
+                                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(bodyTextView.getText());
+                                    int startIndex = bodyTextView.getText().toString().indexOf(translatedText);
+                                    int endIndex = startIndex + translatedText.length();
+                                    ClickableSpan clickableSpan = new ClickableSpan() {
+                                        @Override
+                                        public void onClick(View widget) {
+                                            showWordDetailsPopup(wordInfo);
+                                        }
+
+                                        @Override
+                                        public void updateDrawState(TextPaint ds) {
+                                            super.updateDrawState(ds);
+                                            ds.setTextSize(24);
+                                        }
+                                    };
+                                    spannableStringBuilder.setSpan(clickableSpan, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    bodyTextView.setText(spannableStringBuilder);
+                                    bodyTextView.setMovementMethod(LinkMovementMethod.getInstance());
                                 });
                             });
-                        }, 500);
-                    }
+                        }
+                    }, index * DELAY_MS);
                 }
             }
         }
-
-        Spanned spannedText = Html.fromHtml(originalHtml, Html.FROM_HTML_MODE_COMPACT);
-        String text = spannedText.toString();
-
-        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(text);
-        HashMap<String, Integer> nounIndexMap = new HashMap<>();
-        int index = 0;
-        for (Element element : elements) {
-            String elementText = element.ownText();
-            if (!elementText.trim().isEmpty()) {
-                String[] words = elementText.split("\\s+");
-                for (String w : words) {
-                    if (isNoun(w)) {
-                        nounIndexMap.put(w, index);
-                    }
-                    spannableStringBuilder.append(w).append(" ");
-                    index += w.length() + 1;
-                }
-            }
-        }
-
-
-        bodyTextView.setText(spannableStringBuilder);
-    }
-
-    private void applyTranslationForWord(WordInfo wordInfo) {
-        String word = wordInfo.getWord();
-        String translatedText = wordInfo.getTranslation();
-        if (translatedText == null) {
-            return;
-        }
-
-        Document document = Jsoup.parse(bodyTextView.getText().toString());
-        List<Element> elements = document.body().getAllElements();
-        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder();
-
-        HashMap<String, Integer> nounIndexMap = new HashMap<>();
-        int index = 0;
-        for (Element element : elements) {
-            String elementText = element.ownText();
-            if (!elementText.trim().isEmpty()) {
-                String[] words = elementText.split("\\s+");
-                for (String w : words) {
-                    if (isNoun(w)) {
-                        nounIndexMap.put(w, index);
-                    }
-                    spannableStringBuilder.append(w).append(" ");
-                    index += w.length() + 1;
-                }
-            }
-        }
-
-        Integer indexPosition = nounIndexMap.get(word);
-        String highlightedText = "";
-        if (indexPosition!= null) {
-            highlightedText = highlightText(translatedText);
-            Spanned spannedText = (Spanned) bodyTextView.getText();
-            SpannableStringBuilder modifiedSpannableStringBuilder = new SpannableStringBuilder(spannedText);
-            modifiedSpannableStringBuilder.replace(indexPosition, indexPosition + word.length(), highlightedText);
-            ClickableSpan clickableSpan = new ClickableSpan() {
-                @Override
-                public void onClick(View widget) {
-                    showWordDetailsPopup(wordInfo);
-                }
-
-                @Override
-                public void updateDrawState(TextPaint ds) {
-                    super.updateDrawState(ds);
-                    ds.setTextSize(24);
-                }
-            };
-            modifiedSpannableStringBuilder.setSpan(clickableSpan, indexPosition, indexPosition + highlightedText.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-            bodyTextView.setText(modifiedSpannableStringBuilder);
-        }
-
-        bodyTextView.setMovementMethod(LinkMovementMethod.getInstance());
-    }
-
-    private int getNounCount(String originalHtml) {
-        Document document = Jsoup.parse(originalHtml);
-        List<Element> elements = document.body().getAllElements();
-        int nounCount = 0;
-
-        for (Element element : elements) {
-            String elementText = element.ownText();
-            if (!elementText.trim().isEmpty()) {
-                String[] words = elementText.split("\\s+");
-                for (String word : words) {
-                    if (isNoun(word)) {
-                        nounCount++;
-                    }
-                }
-            }
-        }
-
-        return nounCount;
     }
 
     private void showWordDetailsPopup(WordInfo wordInfo) {
@@ -345,11 +273,6 @@ public class ArticleActivity extends AppCompatActivity {
             callback.onTranslationComplete("Translation Failed");
         }
     }
-    OkHttpClient client = new OkHttpClient.Builder()
-            .connectTimeout(60, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
-            .build();
 
     private interface TranslationCallback {
         void onTranslationComplete(String translatedText);
