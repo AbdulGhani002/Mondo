@@ -70,7 +70,7 @@ public class HomePageActivity extends AppCompatActivity {
                 "2024-12-31",
                 "newest",
                 "headline,body",
-                10,
+                20,
                 query
         );
 

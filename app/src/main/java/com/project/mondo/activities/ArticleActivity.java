@@ -27,12 +27,10 @@ import com.project.mondo.models.TranslationResponse;
 import com.project.mondo.network.TranslationService;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -91,9 +89,12 @@ public class ArticleActivity extends AppCompatActivity {
     }
 
     private void translateAndHighlightText(String originalHtml) {
-        Document document = Jsoup.parse(originalHtml);
-        List<Element> elements = document.body().getAllElements();
+        final Document[] document = {Jsoup.parse(originalHtml)};
+        List<Element> elements = document[0].body().getAllElements();
         Handler handler = new Handler(Looper.getMainLooper());
+
+        SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(bodyTextView.getText());
+        Set<String> processedWords = new HashSet<>();
 
         for (Element element : elements) {
             String elementText = element.ownText();
@@ -102,6 +103,9 @@ public class ArticleActivity extends AppCompatActivity {
                 for (int i = 0; i < words.length; i++) {
                     final String word = words[i];
                     final int index = i;
+                    if (processedWords.contains(word)) continue; // Skip if word already processed
+                    processedWords.add(word);
+
                     handler.postDelayed(() -> {
                         if (isNoun(word)) {
                             translateText(word, translatedText -> {
@@ -111,15 +115,17 @@ public class ArticleActivity extends AppCompatActivity {
                                         return;
                                     }
                                     String highlightedText = highlightText(translatedText);
-                                    element.html(element.html().replaceFirst(word, highlightedText));
-                                    bodyTextView.setText(Html.fromHtml(document.html(), Html.FROM_HTML_MODE_COMPACT));
-                                    Log.d(TAG, "Updated HTML: " + document.html());
+                                    String updatedHtml = document[0].html().replaceFirst("\\b" + word + "\\b", highlightedText);
+                                    document[0] = Jsoup.parse(updatedHtml);
+                                    bodyTextView.setText(Html.fromHtml(document[0].html(), Html.FROM_HTML_MODE_COMPACT));
+                                    Log.d(TAG, "Updated HTML: " + document[0].html());
 
                                     WordInfo wordInfo = new WordInfo(word, translatedText, null, null, null);
                                     translatedWords.add(wordInfo);
 
-                                    SpannableStringBuilder spannableStringBuilder = new SpannableStringBuilder(bodyTextView.getText());
+                                    // Add clickable span to the translated text
                                     int startIndex = bodyTextView.getText().toString().indexOf(translatedText);
+                                    if (startIndex < 0) return; // Ensure the word is found
                                     int endIndex = startIndex + translatedText.length();
                                     ClickableSpan clickableSpan = new ClickableSpan() {
                                         @Override
@@ -144,6 +150,7 @@ public class ArticleActivity extends AppCompatActivity {
             }
         }
     }
+
 
     private void showWordDetailsPopup(WordInfo wordInfo) {
         PopupWindow popupWindow = new PopupWindow(this);
